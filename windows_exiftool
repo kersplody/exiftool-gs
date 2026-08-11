@@ -11,7 +11,7 @@ use strict;
 use warnings;
 require 5.004;
 
-my $version = '13.55';
+my $version = '13.59';
 
 $^W = 1;    # enable global warnings
 
@@ -1021,7 +1021,8 @@ for (;;) {
     /^list_dir$/i and $listDir = 1, next;
     (/^e$/ or $a eq '-composite') and $mt->Options(Composite => 0), next;
     (/^-e$/ or $a eq 'composite') and $mt->Options(Composite => 1), next;
-    (/^E$/ or $a eq 'escapehtml') and require Image::ExifTool::HTML and $escapeHTML = 1, next;
+    # (-eh is undocumented)
+    (/^E$/ or $a eq 'escapehtml' or $a eq 'eh') and require Image::ExifTool::HTML and $escapeHTML = 1, next;
     ($a eq 'ec' or $a eq 'escapec') and $escapeC = 1, next;
     ($a eq 'ex' or $a eq 'escapexml') and $escapeXML = 1, next;
     if (/^echo(\d)?$/i) {
@@ -2436,7 +2437,8 @@ sub GetImageInfo($$)
             if (defined $tag) {
                 $done{$tag} = 1;
                 $g = $et->GetGroup($tag, $showGroup);
-            } else {
+            }
+            unless ($g) { # ($g could be '' if requesting non-existent tag, and this will sort last)
                 for (;;) {
                     $tag2 = shift @found2;
                     defined $tag2 or $g = '', last;
@@ -4216,8 +4218,8 @@ sub SetWindowTitle($)
     if ($curTitle ne $title) {
         $curTitle = $title;
         if ($^O eq 'MSWin32') {
-            $title =~ tr(-_a-zA-Z0-9%.+/:=?*@~ )()dc;  # allow only safe characters
-            $title =~ s/([\/?:%])/^$1/g;   # escape remaing questionable chars
+            # allow only safe characters
+            $title =~ tr(-_a-zA-Z0-9 \(\)[]{}%.+/:;,=?*!@#$~')()dc;
             eval { system qq{title $title} };
         } else {
             # (this only works for XTerm terminals, and STDERR must go to the console)
@@ -4663,6 +4665,7 @@ sub FilenameSPrintf($;$@)
     $part{F} = $part{f} . $part{E};
     ($part{D} = $part{d}) =~ s{/+$}{};
     @part{qw(t g s o)} = @extra;
+    $part{o} =~ s(^.*[/\\])()s if $part{o}; # remove directory if it exists
     my ($filename, $pos) = ('', 0);
     while ($fmt =~ /(%([-+]?)(\d*)([.:]?)(\d*)([lu]?)([dDfFeEtgso]))/g) {
         $filename .= substr($fmt, $pos, pos($fmt) - $pos - length($1));
