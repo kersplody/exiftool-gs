@@ -992,11 +992,11 @@ available.  Extended bracket values are printed as &#39;WB-BA&#39;, &#39;WB-GM&#
   <br>10 = Cross Processing
   <br>11 = Flat
   <br>256 = Standard
-  <br>257 = Vivid</td><td>&nbsp;&nbsp;</td>
-  <td>258 = Monotone
+  <br>257 = Vivid
+  <br>258 = Monotone
   <br>259 = Soft Monotone
-  <br>260 = Hard Monotone
-  <br>261 = Hi-contrast B&amp;W
+  <br>260 = Hard Monotone</td><td>&nbsp;&nbsp;</td>
+  <td>261 = Hi-contrast B&amp;W
   <br>262 = Positive Film
   <br>263 = Bleach Bypass 2
   <br>264 = Retro
@@ -1006,7 +1006,12 @@ available.  Extended bracket values are printed as &#39;WB-BA&#39;, &#39;WB-GM&#
   <br>32768 = Standard
   <br>32769 = Hard
   <br>32770 = Soft
-  <br>33024 = Monochrome</td></tr></table>
+  <br>33024 = Custom 3
+  <br>33025 = Solid
+  <br>33026 = Soft
+  <br>33027 = High Contrast
+  <br>33028 = Grainy
+  <br>33029 = HDR tone</td></tr></table>
 </td></tr>
 <tr class=b>
 <td title='0x0050 = 80'>0x0050</td>
@@ -1407,11 +1412,36 @@ other models)</span>
 <td class=c>int8s[2]</td>
 <td><span class=s>&#39;0 0&#39; = Off</span></td></tr>
 <tr>
+<td title='0x0098 = 152'>0x0098</td>
+<td>CropMode</td>
+<td class=c>int8u[3]</td>
+<td><span class=s>&#39;0 0 0&#39; = Full
+  <br>&#39;0 5 0&#39; = Medium
+  <br>&#39;0 6 0&#39; = Small</span></td></tr>
+<tr class=b>
+<td title='0x0099 = 153'>0x0099</td>
+<td>SnapFocusDistance</td>
+<td class=c>int8u[3]</td>
+<td><span class=s><span class=n>(the DOF settings occur in Snap Distance Priority AE or Sn mode)</span></span><table class=cols><tr>
+  <td>&#39;1 0 0&#39; = 1 m
+  <br>&#39;2 0 0&#39; = 1.5 m
+  <br>&#39;3 0 0&#39; = 2 m
+  <br>&#39;3 0 1&#39; = 2 m - DOF3
+  <br>&#39;3 0 2&#39; = 2 m - DOF2
+  <br>&#39;3 0 3&#39; = 2 m - DOF1</td><td>&nbsp;&nbsp;</td>
+  <td>&#39;4 0 0&#39; = 2.5 m
+  <br>&#39;5 0 0&#39; = 5 m
+  <br>&#39;6 0 0&#39; = 3.5 m
+  <br>&#39;7 0 0&#39; = 0.3 m
+  <br>&#39;255 0 0&#39; = inf</td></tr></table>
+</td></tr>
+<tr>
 <td title='0x009e = 158'>0x009e</td>
 <td>HDF</td>
 <td class=c>int8u</td>
 <td><span class=s>0 = Off
-  <br>1 = On</span></td></tr>
+  <br>1 = On
+  <br>2 = Red Filter</span></td></tr>
 <tr class=b>
 <td title='0x0200 = 512'>0x0200</td>
 <td>BlackPoint</td>
@@ -1663,43 +1693,48 @@ are left, top, width and height in a 720x480 frame, with Y downwards)</span></sp
 <td class=c>-</td>
 <td>--&gt; <a href='Pentax.html#AFPointInfo'>Pentax AFPointInfo Tags</a></td></tr>
 <tr class=b>
+<td title='0x0247 = 583'>0x0247</td>
+<td>ImageControl</td>
+<td class=c>-</td>
+<td>--&gt; <a href='Pentax.html#ImageControl'>Pentax ImageControl Tags</a></td></tr>
+<tr>
 <td title='0x03fe = 1022'>0x03fe</td>
 <td>DataDump</td>
 <td class=c>no</td>
 <td>&nbsp;</td></tr>
-<tr>
+<tr class=b>
 <td title='0x03ff = 1023'>0x03ff</td>
 <td>TempInfo
   <br>UnknownInfo</td>
 <td class=c>-<br>-</td>
 <td>--&gt; <a href='Pentax.html#TempInfo'>Pentax TempInfo Tags</a>
   <br>--&gt; <a href='Pentax.html#UnknownInfo'>Pentax UnknownInfo Tags</a></td></tr>
-<tr class=b>
+<tr>
 <td title='0x0402 = 1026'>0x0402</td>
 <td>ToneCurve</td>
 <td class=c title=' ~ = Writable only with -n'>yes~</td>
 <td>&nbsp;</td></tr>
-<tr>
+<tr class=b>
 <td title='0x0403 = 1027'>0x0403</td>
 <td>ToneCurves</td>
 <td class=c title=' ~ = Writable only with -n'>yes~</td>
 <td>&nbsp;</td></tr>
-<tr class=b>
+<tr>
 <td title='0x0405 = 1029'>0x0405</td>
 <td>UnknownBlock?</td>
 <td class=c>undef</td>
 <td><span class=s><span class=n>(large unknown data block in PEF/DNG images but not JPG images)</span></span></td></tr>
-<tr>
+<tr class=b>
 <td title='0x040b = 1035'>0x040b</td>
 <td>FaceInfoK3III</td>
 <td class=c>-</td>
 <td>--&gt; <a href='Pentax.html#FaceInfoK3III'>Pentax FaceInfoK3III Tags</a></td></tr>
-<tr class=b>
+<tr>
 <td title='0x040c = 1036'>0x040c</td>
 <td>AFInfoK3III</td>
 <td class=c>-</td>
 <td>--&gt; <a href='Pentax.html#AFInfoK3III'>Pentax AFInfoK3III Tags</a></td></tr>
-<tr>
+<tr class=b>
 <td title='0x0e00 = 3584'>0x0e00</td>
 <td>PrintIM</td>
 <td class=c>-</td>
@@ -4706,6 +4741,119 @@ valid for other models.</p>
 <td>&nbsp;</td></tr>
 </table></td></tr></table></blockquote>
 
+<h2><a name='ImageControl'>Pentax ImageControl Tags</a></h2>
+<blockquote>
+<table class=frame><tr><td>
+<table class=inner cellspacing=1>
+<tr class=h><th>Index2</th><th>Tag Name</th>
+<th>Writable</th><th>Values / <span class=n>Notes</span></th></tr>
+<tr>
+<td class=r title='0 = 0x0'>0</td>
+<td>Saturation</td>
+<td class=c>int16s</td>
+<td>&nbsp;</td></tr>
+<tr class=b>
+<td class=r title='1 = 0x1'>1</td>
+<td>Hue</td>
+<td class=c>int16s</td>
+<td>&nbsp;</td></tr>
+<tr>
+<td class=r title='2 = 0x2'>2</td>
+<td>HighLowKey</td>
+<td class=c>int16s</td>
+<td>&nbsp;</td></tr>
+<tr class=b>
+<td class=r title='3 = 0x3'>3</td>
+<td>Contrast</td>
+<td class=c>int16s</td>
+<td>&nbsp;</td></tr>
+<tr>
+<td class=r title='4 = 0x4'>4</td>
+<td>ContrastHighlight</td>
+<td class=c>int16s</td>
+<td>&nbsp;</td></tr>
+<tr class=b>
+<td class=r title='5 = 0x5'>5</td>
+<td>ContrastShadow</td>
+<td class=c>int16s</td>
+<td>&nbsp;</td></tr>
+<tr>
+<td class=r title='6 = 0x6'>6</td>
+<td>Sharpness</td>
+<td class=c>int16s</td>
+<td>&nbsp;</td></tr>
+<tr class=b>
+<td class=r title='8 = 0x8'>8</td>
+<td>RetroToning</td>
+<td class=c>int16s</td>
+<td>&nbsp;</td></tr>
+<tr>
+<td class=r title='9 = 0x9'>9</td>
+<td>Shading</td>
+<td class=c>int16s</td>
+<td>&nbsp;</td></tr>
+<tr class=b>
+<td class=r title='10 = 0xa'>10</td>
+<td>Clarity</td>
+<td class=c>int16s</td>
+<td>&nbsp;</td></tr>
+<tr>
+<td class=r title='13 = 0xd'>13</td>
+<td>BWToning</td>
+<td class=c>int16s</td>
+<td><table class=cols><tr>
+  <td>0 = Off
+  <br>1 = Sepia
+  <br>2 = Red</td><td>&nbsp;&nbsp;</td>
+  <td>3 = Green
+  <br>4 = Blue
+  <br>5 = Purple</td></tr></table>
+</td></tr>
+<tr class=b>
+<td class=r title='14 = 0xe'>14</td>
+<td>BleachBypassToning</td>
+<td class=c>int16s</td>
+<td><span class=s>0 = Off
+  <br>1 = Cold
+  <br>2 = Warm</span></td></tr>
+<tr>
+<td class=r title='15 = 0xf'>15</td>
+<td>HDRToning</td>
+<td class=c>int16s</td>
+<td><span class=s>0 = Off
+  <br>1 = B&amp;W
+  <br>2 = Sepia</span></td></tr>
+<tr class=b>
+<td class=r title='16 = 0x10'>16</td>
+<td>HDRToneLevel</td>
+<td class=c>int16s</td>
+<td><span class=s>0 = Low
+  <br>1 = Med
+  <br>2 = High</span></td></tr>
+<tr>
+<td class=r title='17 = 0x11'>17</td>
+<td>BWFilter</td>
+<td class=c title=' ~ = Writable only with -n'>int8u[4]~</td>
+<td>&nbsp;</td></tr>
+<tr class=b>
+<td class=r title='19 = 0x13'>19</td>
+<td>BWGrainEffect</td>
+<td class=c>int16s</td>
+<td><span class=s>0 = Off
+  <br>1 = 3 (strong)
+  <br>3 = 2 (medium)
+  <br>5 = 1 (weak)
+  <br>8 = n/a</span></td></tr>
+<tr>
+<td class=r title='21 = 0x15'>21</td>
+<td>CrossProcessingColorTone</td>
+<td class=c>int16s</td>
+<td><span class=s>-1 = n/a
+  <br>1 = Blue
+  <br>2 = Magenta
+  <br>3 = Yellow</span></td></tr>
+</table></td></tr></table></blockquote>
+
 <h2><a name='TempInfo'>Pentax TempInfo Tags</a></h2>
 <p>A number of additional temperature readings are extracted from this 256-byte
 binary-data block in images from models such as the K-01, K-3, K-5, K-50 and
@@ -5605,7 +5753,7 @@ stored as ASCII text in a format very similar to some HP models.</p>
 
 <hr>
 (This document generated automatically by Image::ExifTool::BuildTagLookup)
-<br><i>Last revised May 27, 2026</i>
+<br><i>Last revised Nov 10, 2026</i>
 <p class=lf><a href='index.html'>&lt;-- ExifTool Tag Names</a></p>
 </body>
 </html>

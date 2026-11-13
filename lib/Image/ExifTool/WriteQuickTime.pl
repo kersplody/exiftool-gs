@@ -60,6 +60,22 @@ my %heicMap = (
     InteropIFD   => 'ExifIFD',
     MakerNotes   => 'ExifIFD',
 );
+my %mif3Map = (
+    # HEIC/HEIF/AVIF ('ftyp' major brand 'mif3') -> XMP/EXIF in top-level 'mini' box
+    Mini         => 'MOV',
+    XMP          => 'Mini',
+    EXIF         => 'Mini',
+    ICC_Profile  => 'Mini',
+    IFD0         => 'EXIF',
+    IFD1         => 'IFD0',
+    ExifIFD      => 'IFD0',
+    GPS          => 'IFD0',
+    SubIFD       => 'IFD0',
+    GlobParamIFD => 'IFD0',
+    PrintIM      => 'IFD0',
+    InteropIFD   => 'ExifIFD',
+    MakerNotes   => 'ExifIFD',
+);
 my %cr3Map = (
     # CR3 ('ftyp' compatible brand 'crx ') -> XMP at top level
     Movie     => 'MOV',
@@ -77,6 +93,7 @@ my %dirMap = (
     MP4  => \%mp4Map,
     CR3  => \%cr3Map,
     HEIC => \%heicMap,
+    MIF3 => \%mif3Map,
 );
 
 # convert ExifTool Format to QuickTime type
@@ -571,7 +588,7 @@ sub WriteItemInfo($$$)
                 next;
             }
         }
-        my ($hdr, $subTable, $proc);
+        my ($hdr, $subTable, $proc, %moreDirInfo, $newVal2);
         my $strt = 0;
         if ($name eq 'EXIF') {
             if (not length $buff) {
@@ -583,12 +600,28 @@ sub WriteItemInfo($$$)
             } elsif (length($buff) >= 4 and length($buff) >= 4 + unpack('N',$buff)) {
                 $hdr = substr($buff, 0, 4 + unpack('N',$buff));
                 $strt = length $hdr;
+                if (length($hdr) == 14 and substr($hdr, 4, 2) eq "\xff\xe1") {
+                    if ($$et{DEL_GROUP}{EXIF} or $$et{DEL_GROUP}{IFD0}) {
+                        # recreate EXIF in the usual format (no Xiaomi mess)
+                        ($hdr, $strt, $buff) = ("\0\0\0\x06Exif\0\0", 0, '');
+                    } else {
+                        $proc = \&Image::ExifTool::WriteJPEG;
+                        # (use EXIF table so the group names will be correct for deleting as a group)
+                        $moreDirInfo{XiaomiMess} = 1;
+                        $moreDirInfo{OutFile} = \$newVal2;
+                        $moreDirInfo{RAF} =  File::RandomAccess->new(\$buff);
+                        $newVal2 = '';
+                        $$et{EDIT_DIRS}{APP1} = 'JPEG';    # must parse into JPEG APP1
+                        $raf->Seek(4, 0); # (skip size)
+                        $hdr = '';
+                    }
+                }
             } else {
                 $et->Warn('Invalid Exif header');
                 next;
             }
-            $subTable = GetTagTable('Image::ExifTool::Exif::Main');
-            $proc = \&Image::ExifTool::WriteTIFF;
+            $subTable = GetTagTable('Image::ExifTool::Exif::Main') unless $subTable;
+            $proc = \&Image::ExifTool::WriteTIFF unless $proc;
         } else {
             $hdr = '';
             $subTable = GetTagTable('Image::ExifTool::XMP::Main');
@@ -598,9 +631,24 @@ sub WriteItemInfo($$$)
             DataLen  => length $buff,
             DirStart => $strt,
             DirLen   => length($buff) - $strt,
+            %moreDirInfo,
         );
         my $changed = $$et{CHANGED};
+        $$et{DemoteErrors} = 1;
         my $newVal = $et->WriteDirectory(\%dirInfo, $subTable, $proc);
+        if ($$et{DemoteErrors} > 1) {
+            # just copy existing subdirectory if a non-quicktime error occurred
+            undef $newVal;
+            $$et{CHANGED} = $changed; # nothing changed
+        }
+        undef $$et{DemoteErrors};
+        if ($moreDirInfo{OutFile} and defined $newVal) {
+            if ($newVal eq '1') {
+                $newVal = $newVal2; # return OutFile buffer (from WriteJPEG)
+            } elsif ($newVal eq '0' or $newVal eq '-1') {
+                undef $newVal;  # (shouldn't happen)
+            }
+        }
         if (defined $newVal and $changed ne $$et{CHANGED} and
             # nothing changed if deleting an empty directory
             ($dirInfo{DirLen} or length $newVal))
@@ -898,7 +946,7 @@ sub WriteQuickTime($$$)
     my ($et, $dirInfo, $tagTablePtr) = @_;
     $et or return 1;    # allow dummy access to autoload this package
     my ($mdat, @mdat, @mdatEdit, $edit, $track, $outBuff, $co, $term, $delCount);
-    my (%langTags, $canCreate, $delGrp, %boxPos, %didDir, $writeLast, $err, $atomCount);
+    my (%langTags, $canCreate, $delGrp, %boxPos, %didDir, %writeLast, $err, $atomCount);
     my ($tag, $lastTag, $lastPos, $errStr, $trailer, $buf2, $keysGrp, $keysPath, $itemIndex);
     my $outfile = $$dirInfo{OutFile} || return 0;
     my $raf = $$dirInfo{RAF};       # (will be null for lower-level atoms)
@@ -1386,6 +1434,7 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
                                             }
                                             $ctry = unpack('n', pack('a2',uc($2))) if $2 and $2 ne 'ZZ';
                                         }
+                                        $lang = $undLang if not $lang and $$et{OPTIONS}{QuickTimeUndLang};
                                         $newData = substr($buff, 0, $pos) unless defined $newData;
                                         $newData .= pack('Na4Nnn',16+length($newVal),'data',$flags,$ctry,$lang).$newVal;
                                         my $grp = $et->GetGroup($ti, 1);
@@ -1459,7 +1508,8 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
                                     $et->VerboseValue("- $grp:$$langInfo{Name}", $val);
                                     $et->VerboseValue("+ $grp:$$langInfo{Name}", $prVal);
                                     $newData = substr($buff, 0, $pos-16) unless defined $newData;
-                                    my $wLang = $lang eq $undLang ? 0 : $lang;
+                                    my $wLang = $lang;
+                                    $wLang = 0 if $wLang eq $undLang and not $$et{OPTIONS}{QuickTimeUndLang};
                                     $newData .= pack('Na4Nnn', length($newVal)+16, $type, $flags, $ctry, $wLang);
                                     $newData .= $newVal;
                                     ++$$et{CHANGED};
@@ -1547,7 +1597,8 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
                                 unless ($$tagInfo{NoDecode}) {
                                     $newData = $et->Encode($newData, $lang < 0x400 ? $charsetQuickTime : 'UTF8');
                                 }
-                                my $wLang = $lang eq $undLang ? 0 : $lang;
+                                my $wLang = $lang;
+                                $wLang = 0 if $wLang eq $undLang and not $$et{OPTIONS}{QuickTimeUndLang};
                                 if ($iText < 6) {
                                     $newData = pack('nn', length($newData), $wLang) . $newData;
                                 } elsif ($iText == 6) {
@@ -1590,7 +1641,8 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
                     push @{$$dirInfo{ChunkOffset}}, @chunkOffset;
                 }
                 if ($$tagInfo{WriteLast}) {
-                    $writeLast = ($writeLast || '') . Set32u($len) . $tag . $newData;
+                    my $ord = $$tagInfo{WriteLast};
+                    $writeLast{$ord} = ($writeLast{$ord} || '') . Set32u($len) . $tag . $newData;
                 } else {
                     $boxPos{$tag} = [ length($$outfile), length($newData) + 8 ];
                     # write the updated directory with its atom header
@@ -1648,7 +1700,8 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
             }
         }
         if ($tagInfo and $$tagInfo{WriteLast}) {
-            $writeLast = ($writeLast || '') . $hdr . $buff;
+            my $ord = $$tagInfo{WriteLast};
+            $writeLast{$ord} = ($writeLast{$ord} || '') . $hdr . $buff;
         } else {
             # save position of this box in the output buffer
 #TODO do this:
@@ -1777,6 +1830,7 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
                     }
                     $ctry = unpack('n', pack('a2',uc($2))) if $2 and $2 ne 'ZZ';
                 }
+                $lang = $undLang if not $lang and $$et{OPTIONS}{QuickTimeUndLang};
                 if ($$dirInfo{HasData}) {
                     # add 'data' header
                     $newVal = pack('Na4Nnn',16+length($newVal),'data',$flags,$ctry,$lang).$newVal;
@@ -1790,18 +1844,19 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
                         # (with extra junk before language code if IText > 6)
                         my $n = $$tagInfo{IText} - 6;
                         $newVal .= ' ' x $n if length($newVal) < $n;
-                        $newVal = "\0\0\0\0" . substr($newVal,0,$n) . pack('n',0,$lang) . substr($newVal,$n) . "\0";
+                        $newVal = "\0\0\0\0" . substr($newVal,0,$n) . pack('n',$lang) . substr($newVal,$n) . "\0";
                     } else {
                         # add IText header
                         $newVal = pack('nn',length($newVal),$lang) . $newVal;
                     }
-                } elsif ($ctry or $lang) {
+                } elsif ($ctry or ($lang and $lang ne $undLang)) {
                     my $grp = $et->GetGroup($tagInfo,1);
                     $et->Warn("Can't use language code for $grp:$$tagInfo{Name}");
                     next;
                 }
                 if ($$tagInfo{WriteLast}) {
-                    $writeLast = ($writeLast || '') .  Set32u(8+length($newVal)) . $tag . $newVal;
+                    my $ord = $$tagInfo{WriteLast};
+                    $writeLast{$ord} = ($writeLast{$ord} || '') .  Set32u(8+length($newVal)) . $tag . $newVal;
                 } else {
                     $boxPos{$tag} = [ length($$outfile), 8 + length($newVal) ];
                     Write($outfile, Set32u(8+length($newVal)), $tag, $newVal) or $rtnVal=$rtnErr, $err=1;
@@ -1857,7 +1912,8 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
                 }
                 my $newHdr = Set32u(8+length($newData)+length($prefix)) . $tag . $prefix;
                 if ($$tagInfo{WriteLast}) {
-                    $writeLast = ($writeLast || '') . $newHdr . $newData;
+                    my $ord = $$tagInfo{WriteLast};
+                    $writeLast{$ord} = ($writeLast{$ord} || '') . $newHdr . $newData;
                 } else {
                     if ($tag eq 'uuid') {
                         # add offset for new uuid (needed for CR3 CTBO offsets)
@@ -1904,7 +1960,7 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
 
     # return now if writing subdirectory
     if ($dataPt) {
-        $et->Error("Internal error: WriteLast not on top-level atom!\n") if $writeLast;
+        $et->Error("Internal error: WriteLast not on top-level atom!\n") if %writeLast;
         return $err ? undef : $$outfile;
     }
 
@@ -1916,7 +1972,7 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
             $et->Error('Media data referenced but not found');
             return $rtnVal;
         }
-        $et->Warn('No media data', 1);
+        $et->Warn('No media data', 1) unless $$et{FileType} eq 'MIF3';
     }
 
     # edit mdat blocks as required
@@ -2154,7 +2210,9 @@ ItemID2:    foreach $id (reverse sort { $a <=> $b } keys %$items) {
     }
 
     # write the stuff that must come last
-    Write($outfile, $writeLast) or $rtnVal = 0 if $writeLast;
+    foreach (sort keys %writeLast) {
+        Write($outfile, $writeLast{$_}) or $rtnVal = 0;
+    }
 
     # copy trailers if necessary
     while ($rtnVal and $trailer) {
@@ -2216,10 +2274,20 @@ sub WriteMOV($$)
         $raf->Read($buff, $size-8) == $size-8 and
         $buff !~ /^(....)+(qt  )/s)
     {
+        # (these FileType's may differ when reading, but we need only
+        #  differentiate the different structural types here for purposes
+        #  of deciding where the metadata is written)
         if ($buff =~ /^crx /) {
             $ftype = 'CR3',
         } elsif ($buff =~ /^(heic|mif1|msf1|heix|hevc|hevx|avif)/) {
             $ftype = 'HEIC';
+        } elsif ($buff =~ /^(mif3|msf3)/) {
+            if ($1 eq 'msf3') {
+                # need documentation for this format
+                $et->Error("Can't currently write msf3 files");
+                return 1;
+            }
+            $ftype = 'MIF3';
         } else {
             $ftype = 'MP4';
         }
@@ -2227,8 +2295,8 @@ sub WriteMOV($$)
         $ftype = 'MOV';
     }
     $et->SetFileType($ftype); # need to set "FileType" tag for a Condition
-    if ($ftype eq 'HEIC') {
-        # EXIF is preferred in HEIC files
+    if ($ftype eq 'HEIC' or $ftype eq 'MIF3') {
+        # EXIF is preferred in HEIC files (also prefer in MIF3 for now)
         $et->InitWriteDirs($dirMap{$ftype}, 'EXIF', 'QuickTime');
     } else {
         $et->InitWriteDirs($dirMap{$ftype}, 'XMP', 'QuickTime');

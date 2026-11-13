@@ -976,6 +976,12 @@ effect as a value of 0 for options with numerical values.</p>
     than the original.</td>
     <td align=center>0 or 1</td>
     <td align=center>undef</td></tr>
+<tr id="QuickTimeUndLang"><td>QuickTimeUndLang</td><td>Flag to use 0x55c5
+    ('und') instead of 0x0000 for an undefined language code.  This is a
+    work-around because it has been reported that Apple Photos may sometimes not
+    recognize the zero language code.</td>
+    <td align=center>0 or 1</td>
+    <td align=center>undef</td></tr>
 <tr id="QuickTimeUTC"><td>QuickTimeUTC</td><td>Flag set to assume that integer-valued
     QuickTime date/time values are stored as UTC, causing conversion to local
     time when they are extracted and from local time when written. According to
@@ -1221,7 +1227,8 @@ the .ExifTool_config file if it exists.</p>
 </table></blockquote>
 
 <hr><h2><a name="ExtractInfo">ExtractInfo</a></h2>
-<p>Extract all meta information from an image.</p>
+<p>Extract all meta information from an image.  Need not be called when
+<a href="#ImageInfo">ImageInfo</a> is used.</p>
 <blockquote><table class='norm'>
 <tr><td><b>Prototype</b></td><td>ExtractInfo($;@)</td></tr>
 <tr><td valign=top><b>Inputs</b></td><td><b>0)</b> ExifTool object reference
@@ -2375,18 +2382,18 @@ MagData, MakerNotes, MakerUnknown, Matroska, MaxMetData, MediaJukebox,
 MemoGlob, MesgCaps, Meta, MetaIFD, MetZone, Microsoft, MIE-Audio,
 MIE-Camera, MIE-Canon, MIE-Doc, MIE-Extender, MIE-Flash, MIE-Geo, MIE-GPS,
 MIE-Image, MIE-Lens, MIE-Main, MIE-MakerNotes, MIE-Meta, MIE-Orient,
-MIE-Preview, MIE-Thumbnail, MIE-Unknown, MIE-UTM, MIE-Video, MIFF, Minolta,
-MinoltaRaw, MISB, MNG, MOBI, MOI, MonitorHRData, MonitorInfo, Monitoring,
-Motorola, MPC, MPEG, MPF0, MPImage, MS-DOC, MXF, NapEvent, Nextbase, Nikon,
-NikonCapture, NikonCustom, NikonScan, NikonSettings, NineEdits, Nintendo,
-NITF, NMEA, OBDIIData, Ocad, Ogg, OHRSettings, Olympus, OneDSensorCal,
-OnePlus, OpenEXR, Opus, Palm, Panasonic, PanasonicRaw, Parrot, PDF, Pentax,
-PhaseOne, PhotoCD, PhotoMechanic, Photoshop, PICT, PictureInfo, PNG,
-PNG-cICP, PNG-pHYs, PostScript, PowerZone, PreviewIFD, PrintIM, ProfileIFD,
-PSP, Qualcomm, QuickTime, Radiance, RAF, RAF2, RawBBI, Rawzor, Real,
-Real-CONT, Real-MDPR, Real-PROP, Real-RA3, Real-RA4, Real-RA5, Real-RJMD,
-Reconyx, Record, Red, RespirationRate, Ricoh, RIFF, RMETA, RSRC, RTF,
-Samsung, Sanyo, Scalado, Schedule, SDMProfile, SEAL, SegFile, SegLap,
+MIE-Preview, MIE-Thumbnail, MIE-Unknown, MIE-UTM, MIE-Video, MIFF, Mini,
+Minolta, MinoltaRaw, MISB, MNG, MOBI, MOI, MonitorHRData, MonitorInfo,
+Monitoring, Motorola, MPC, MPEG, MPF0, MPImage, MS-DOC, MXF, NapEvent,
+Nextbase, Nikon, NikonCapture, NikonCustom, NikonScan, NikonSettings,
+NineEdits, Nintendo, NITF, NMEA, OBDIIData, Ocad, Ogg, OHRSettings, Olympus,
+OneDSensorCal, OnePlus, OpenEXR, Opus, Palm, Panasonic, PanasonicRaw,
+Parrot, PDF, Pentax, PhaseOne, PhotoCD, PhotoMechanic, Photoshop, PICT,
+PictureInfo, PNG, PNG-cICP, PNG-pHYs, PostScript, PowerZone, PreviewIFD,
+PrintIM, ProfileIFD, PSP, Qualcomm, QuickTime, Radiance, RAF, RAF2, RawBBI,
+Rawzor, Real, Real-CONT, Real-MDPR, Real-PROP, Real-RA3, Real-RA4, Real-RA5,
+Real-RJMD, Reconyx, Record, Red, RespirationRate, Ricoh, RIFF, RMETA, RSRC,
+RTF, Samsung, Sanyo, Scalado, Schedule, SDMProfile, SEAL, SegFile, SegLap,
 SegLeaderboard, SegmentID, SegPoint, Session, Set, Sigma, SigmaRaw,
 SkinTempOvernight, SlaveDevice, SleepAssessment, SleepDisruptOvernight,
 SleepDisruptPeriod, SleepLevel, Software, Sony, SonyIDC, SpeedZone, SPIFF,
